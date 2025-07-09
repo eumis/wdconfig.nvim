@@ -7,14 +7,13 @@ local stub = require "luassert.stub"
 
 local M = {
     wdconfig = require "wdconfig",
-    cwd_path = "/some/project/path",
     package_path = package.path
 }
 
-stub.new(vim.fn, "expand", function(path) return path:gsub("~", M.cwd_path) end)
-stub.new(vim.fn, "getcwd", function() return M.cwd_path end)
-stub.new(Path, "write")
+local test_cwd_path = Path:new("some", "cwd", "path")
+local test_config_path = Path:new("some", "config.lua")
 
+stub.new(Path, "write")
 local path_read_stub = stub.new(Path, "read")
 local path_exists_stub = stub.new(Path, "exists")
 local dofile_stub = stub.new(_G, "dofile")
@@ -98,9 +97,9 @@ local function test_trust(action, cwd)
     end)
 end
 
-describe("trust", function() test_trust(function() M.wdconfig.trust("/some/cwd/path") end, "/some/cwd/path") end)
+describe("trust", function() test_trust(function() M.wdconfig.trust(test_cwd_path.filename) end, test_cwd_path:absolute()) end)
 describe("WdcTrust", function() test_trust(function() vim.cmd("WdcTrust") end, vim.fn.getcwd()) end)
-describe("WdcTrust with argument", function() test_trust(function() vim.cmd('WdcTrust /some/cwd/path') end, "/some/cwd/path") end)
+describe("WdcTrust with argument", function() test_trust(function() vim.cmd("WdcTrust " .. test_cwd_path.filename) end, test_cwd_path:absolute()) end)
 
 ---@param action fun()
 local function test_load_cwd(action)
@@ -108,7 +107,7 @@ local function test_load_cwd(action)
     after_each(cleanup)
 
     local default_config_name = "config.lua"
-    local default_config_path = Path:new(M.cwd_path, default_config_name):normalize()
+    local default_config_path = Path:new(vim.fn.getcwd(), default_config_name):absolute()
 
     it("should load if exists", function()
         M.wdconfig.setup({ trusted_cwd_only = false })
@@ -147,10 +146,10 @@ local function test_load_cwd(action)
         assert.stub(dofile_stub).was_not_called_with(default_config_path)
     end)
 
-    local configs = { "config.lua", "local.lua", "config/init.lua" }
+    local configs = { "config.lua", "local.lua", Path:new("config", "init.lua").filename }
     local use_cases = {}
     for _, config in ipairs(configs) do
-        table.insert(use_cases, { config, Path:new(M.cwd_path, config):normalize() })
+        table.insert(use_cases, { config, Path:new(vim.fn.getcwd(), config):absolute() })
     end
 
     for _, use_case in ipairs(use_cases) do
@@ -196,7 +195,7 @@ end
 describe("load_cwd", function() test_load_cwd(function() M.wdconfig.load_cwd() end) end)
 describe("WdcLoad", function() test_load_cwd(function() vim.cmd("WdcLoad") end) end)
 
----@param action fun()
+---@param action fun(path: string)
 ---@param path string
 local function test_load(action, path)
     before_each(setup)
@@ -205,30 +204,31 @@ local function test_load(action, path)
     it("should load path if exists", function()
         setup_exists(path)
 
-        action()
+        action(path)
 
-        assert.stub(dofile_stub).was_called_with(path)
+        assert.stub(dofile_stub).was_called_with(Path:new(path):absolute())
     end)
 
     it("should not load if not exists", function()
         setup_not_exists(path)
 
-        action()
+        action(path)
 
-        assert.stub(dofile_stub).was_not_called_with(path)
+        assert.stub(dofile_stub).was_not_called_with(Path:new(path):absolute())
+
     end)
 end
 
-describe("load", function() test_load(function() M.wdconfig.load("/some/path") end, "/some/path") end)
-describe("WdcLoad with argument", function() test_load(function() vim.cmd("WdcLoad /some/path") end, "/some/path") end)
+describe("load", function() test_load(function(path) M.wdconfig.load(path) end, test_config_path.filename) end)
+describe("WdcLoad with argument", function() test_load(function(path) vim.cmd("WdcLoad " .. path) end, test_config_path.filename) end)
 
 describe("load_package", function()
     before_each(setup)
     after_each(cleanup)
 
     local use_cases = {
-        {"scripts", "/some/cwd/", Path:new("/some/cwd/", "scripts"):absolute()},
-        {nil, "/some/cwd/", Path:new("/some/cwd/", "lua"):absolute()},
+        {"scripts", test_cwd_path.filename, Path:new(test_cwd_path.filename, "scripts"):absolute()},
+        {nil, test_cwd_path.filename, Path:new(test_cwd_path.filename, "lua"):absolute()},
         {nil, "~/config", Path:new("~/config", "lua"):absolute()},
         {"scripts", nil, Path:new(vim.fn.getcwd(), "scripts"):absolute()},
         {nil, nil, Path:new(vim.fn.getcwd(), "lua"):absolute()},
@@ -238,7 +238,7 @@ describe("load_package", function()
         it("should load package", function()
             local name, cwd, package_path = unpack(use_case)
 
-            M.wdconfig.load_package(name, cwd, package_path)
+            M.wdconfig.load_package(name, cwd)
 
             assert.is.Truthy(package.path:find(package_path, 1, true))
         end)
