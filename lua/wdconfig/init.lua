@@ -29,7 +29,7 @@ end
 ---@param local_config LocalConfig
 local function save_local_config(local_config)
     if local_config ~= nil then
-        config_path:write(vim.json.encode(local_config))
+        config_path:write(vim.json.encode(local_config), "w")
     end
 end
 
