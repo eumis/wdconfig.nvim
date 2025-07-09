@@ -18,18 +18,18 @@ local M = {
     local_config = nil
 }
 
-local config_path = Path:new(vim.fn.stdpath("config"), "wdconfig.json")
+local local_config_path = Path:new(vim.fn.stdpath("data"), "wdconfig.json")
 
 ---@return LocalConfig
 local function load_local_config()
-    local ok, local_config = pcall(function() return vim.json.decode(config_path:read()) end)
+    local ok, local_config = pcall(function() return vim.json.decode(local_config_path:read()) end)
     return ok and local_config or {}
 end
 
 ---@param local_config LocalConfig
 local function save_local_config(local_config)
     if local_config ~= nil then
-        config_path:write(vim.json.encode(local_config), "w")
+        local_config_path:write(vim.json.encode(local_config), "w")
     end
 end
 

@@ -43,7 +43,7 @@ describe("load_local_config", function()
     before_each(setup)
     after_each(cleanup)
 
-    local local_config_path = Path:new(vim.fn.stdpath("config"), "wdconfig.json").filename
+    local local_config_path = Path:new(vim.fn.stdpath("data"), "wdconfig.json").filename
 
     it("should load local config", function()
         local local_config = {
