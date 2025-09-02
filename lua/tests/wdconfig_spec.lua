@@ -227,11 +227,16 @@ describe("load_package", function()
     after_each(cleanup)
 
     local use_cases = {
-        {"scripts", test_cwd_path.filename, Path:new(test_cwd_path.filename, "scripts"):absolute()},
-        {nil, test_cwd_path.filename, Path:new(test_cwd_path.filename, "lua"):absolute()},
-        {nil, "~/config", Path:new("~/config", "lua"):absolute()},
-        {"scripts", nil, Path:new(vim.fn.getcwd(), "scripts"):absolute()},
-        {nil, nil, Path:new(vim.fn.getcwd(), "lua"):absolute()},
+        {"scripts", test_cwd_path.filename, Path:new(test_cwd_path.filename, "scripts", "?.lua"):absolute()},
+        {"scripts", test_cwd_path.filename, Path:new(test_cwd_path.filename, "scripts", "?", "init.lua"):absolute()},
+        {nil, test_cwd_path.filename, Path:new(test_cwd_path.filename, "lua", "?.lua"):absolute()},
+        {nil, test_cwd_path.filename, Path:new(test_cwd_path.filename, "lua", "?", "init.lua"):absolute()},
+        {nil, "~/config", Path:new("~/config", "lua", "?.lua"):absolute()},
+        {nil, "~/config", Path:new("~/config", "lua", "?", "init.lua"):absolute()},
+        {"scripts", nil, Path:new(vim.fn.getcwd(), "scripts", "?.lua"):absolute()},
+        {"scripts", nil, Path:new(vim.fn.getcwd(), "scripts", "?", "init.lua"):absolute()},
+        {nil, nil, Path:new(vim.fn.getcwd(), "lua", "?.lua"):absolute()},
+        {nil, nil, Path:new(vim.fn.getcwd(), "lua", "?", "init.lua"):absolute()},
     }
 
     for _, use_case in ipairs(use_cases) do
